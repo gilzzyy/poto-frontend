@@ -1,0 +1,12 @@
+{
+  "name": "photobot-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace runner untuk Aplikasi Photobooth (Frontend + Backend + Supabase)",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "node --watch backend/src/server.js",
+    "db:check": "node backend/scripts/check-supabase.js",
+    "test": "node --test backend/tests/api.test.js"
+  }
+}
