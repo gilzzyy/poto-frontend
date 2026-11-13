@@ -1,7 +1,7 @@
 {
-  "name": "Photobooth — Foto Strip Ala Korea",
-  "short_name": "Photobooth",
-  "description": "Photobooth ala Korea: jepret foto, pilih frame pastel, tempel stiker, unduh strip PNG.",
+  "name": "Photobooth Asyricame — Foto Strip Ala Korea",
+  "short_name": "Asyricame",
+  "description": "Photobooth Asyricame ala Korea: jepret foto, pilih frame pastel & edisi spesial, tempel stiker, unduh strip PNG/JPG.",
   "lang": "id",
   "start_url": "/",
   "scope": "/",

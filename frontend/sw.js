@@ -1,5 +1,24 @@
-const CACHE_NAME = 'photobooth-pwa-v1';
-const APP_SHELL = ['/', '/aplikasi-photobooth.html', '/manifest.webmanifest'];
+const CACHE_NAME = 'photobooth-asyricame-v3';
+const APP_SHELL = [
+  '/',
+  '/aplikasi-photobooth.html',
+  '/manifest.webmanifest',
+  '/assets/frames/the1975-data.js',
+  '/assets/frames/the1975-overlay.png',
+  '/assets/frames/the1975-preview.jpg',
+  '/assets/frames/the1975_duo-overlay.png',
+  '/assets/frames/the1975_duo-preview.jpg',
+  '/assets/frames/ransom-overlay.png',
+  '/assets/frames/ransom-preview.jpg',
+  '/assets/frames/specialday-overlay.png',
+  '/assets/frames/specialday-preview.jpg',
+  '/assets/frames/polaroid_denim-overlay.png',
+  '/assets/frames/polaroid_denim-preview.jpg',
+  '/assets/frames/cowgirl-overlay.png',
+  '/assets/frames/cowgirl-preview.jpg',
+  '/assets/frames/canon_vinyl-overlay.png',
+  '/assets/frames/canon_vinyl-preview.jpg',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -28,33 +47,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
-
-  // Network-first untuk endpoint /api (PWA-03)
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(event.request, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Cache-first untuk shell aplikasi & aset statis (PWA-03)
+  // Network-first dengan fallback ke cache offline (PWA-03)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(event.request, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match('/'));
-    })
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches
+          .open(CACHE_NAME)
+          .then((c) => c.put(event.request, copy))
+          .catch(() => {});
+        return res;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cached) => cached || caches.match('/'))
+      )
   );
 });
