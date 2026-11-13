@@ -2,9 +2,6 @@
 
 Aplikasi Photobooth berbasis web (**Korean Pastel Edition**) dengan dukungan **Progressive Web App (PWA)**, **Backend REST API (Node.js + Express.js)**, serta integrasi **Database PostgreSQL & Object Storage Supabase**.
 
-- **Project Owner**: M. Agil Ripai (NIM 241111081)
-- **Konteks Proyek**: Simulasi untuk tugas kuliah (seluruh alur pembayaran & langganan Premium bersifat *dummy/simulasi* sesuai BRD & PRD v1.0).
-
 ---
 
 ## Struktur Proyek
