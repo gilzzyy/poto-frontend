@@ -187,11 +187,28 @@
         border:4px solid #fff;box-shadow:var(--shadow);aspect-ratio:4/3.4;
       }
       .cam-frame video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;}
+      .cam-frame video.rear-cam{transform:none;}
       .cam-frame .filter-tint{position:absolute;inset:0;pointer-events:none;}
       .cam-overlay{position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none;}
-      .cam-top{display:flex;justify-content:space-between;padding:12px;}
+      .cam-top{display:flex;justify-content:space-between;padding:12px;gap:8px;flex-wrap:wrap;}
       .cam-pill{background:rgba(255,255,255,.9);color:var(--pink-deep);font-weight:800;font-size:.8rem;padding:6px 13px;border-radius:999px;}
       .cam-pill.dark{background:rgba(58,43,56,.75);color:#fff;}
+      .cam-facing-bar{display:flex;justify-content:center;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+      .cam-facing-btn{
+        display:inline-flex;align-items:center;gap:6px;padding:7px 15px;border-radius:999px;
+        border:2px solid var(--pink-pale);background:#fff;color:var(--ink-soft);
+        font-weight:800;font-size:.85rem;min-height:2.4rem;transition:all .15s;
+      }
+      .cam-facing-btn.active{background:var(--pink);color:#fff;border-color:var(--pink);box-shadow:var(--shadow-sm);}
+      .cam-facing-btn[disabled]{opacity:.5;cursor:not-allowed;}
+      .cam-flip-btn{
+        width:52px;height:52px;border-radius:50%;border:3px solid var(--pink-pale);
+        background:#fff;color:var(--pink-deep);display:grid;place-items:center;
+        box-shadow:var(--shadow-sm);transition:transform .2s, border-color .15s;
+      }
+      .cam-flip-btn:hover{border-color:var(--pink);}
+      .cam-flip-btn:active{transform:rotate(180deg) scale(.94);}
+      .cam-flip-btn[disabled]{opacity:.5;cursor:not-allowed;}
       .countdown{
         position:absolute;inset:0;display:none;place-items:center;
         font-family:"Baloo 2";font-weight:800;font-size:7rem;color:#fff;
@@ -480,11 +497,25 @@
             <div class="flash" id="flash"></div>
           </div>
 
+          <div class="cam-facing-bar" role="group" aria-label="Pilih kamera depan atau belakang">
+            <button type="button" class="cam-facing-btn active" id="camFrontBtn" data-facing="user">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Kamera Depan
+            </button>
+            <button type="button" class="cam-facing-btn" id="camRearBtn" data-facing="environment">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Kamera Belakang
+            </button>
+          </div>
+
           <div class="cam-dots" id="camDots"></div>
 
-          <div class="cam-actions">
+          <div class="cam-actions" style="align-items:center">
             <button class="shutter" id="shutterBtn" aria-label="Jepret foto">
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <button type="button" class="cam-flip-btn" id="flipCamBtn" title="Putar Kamera Depan / Belakang" aria-label="Putar Kamera Depan atau Belakang">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
             </button>
           </div>
           <p class="cam-note" id="camNote">Kamera belum menyala.</p>
@@ -964,6 +995,7 @@
       stickers: new Set(),
       photos: [],            // array HTMLCanvasElement (foto mentah, tanpa filter)
       stream: null,
+      facingMode: "user",    // "user" = Kamera Depan, "environment" = Kamera Belakang
       capturing: false,
       retakeIndex: null,     // null = sesi baru; angka = retake slot itu saja
       uploadMode: false,
@@ -1155,8 +1187,21 @@
       $("#camProgress").textContent = state.retakeIndex !== null
         ? "Retake foto " + (state.retakeIndex + 1)
         : "Foto " + done + " dari " + total;
-      $("#camFilterPill").textContent = "Filter: " + FILTERS[state.filter].name;
+      const camLabel = state.facingMode === "environment" ? "Belakang" : "Depan";
+      $("#camFilterPill").textContent = "Filter: " + FILTERS[state.filter].name + " · Cam " + camLabel;
       video.style.filter = FILTERS[state.filter].css;
+      video.classList.toggle("rear-cam", state.facingMode === "environment");
+      if ($("#camFrontBtn")) {
+        $("#camFrontBtn").classList.toggle("active", state.facingMode !== "environment");
+        $("#camFrontBtn").disabled = state.capturing;
+      }
+      if ($("#camRearBtn")) {
+        $("#camRearBtn").classList.toggle("active", state.facingMode === "environment");
+        $("#camRearBtn").disabled = state.capturing;
+      }
+      if ($("#flipCamBtn")) {
+        $("#flipCamBtn").disabled = state.capturing;
+      }
       const dots = $("#camDots");
       dots.innerHTML = "";
       for (let i = 0; i < total; i++) {
@@ -1168,25 +1213,45 @@
       $("#camTitle").textContent = state.retakeIndex !== null ? "Retake foto " + (state.retakeIndex + 1) : "Siap-siap berpose!";
     }
 
-    async function startCamera() {
+    async function requestCameraStream(facing) {
+      // Coba constraint exact terlebih dahulu agar perangkat mobile benar-benar berpindah ke kamera belakang/depan
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: facing }, width: { ideal: 1280 }, height: { ideal: 960 } },
+          audio: false
+        });
+      } catch (_) {
+        // Fallback untuk laptop/desktop atau browser yang tidak mendukung exact facingMode
+        return await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 960 } },
+          audio: false
+        });
+      }
+    }
+
+    async function startCamera(forceRestart) {
+      if (forceRestart && state.stream) {
+        stopCamera();
+      }
       if (state.stream) { updateCamUI(); return; }
-      $("#camNote").textContent = "Menyalakan kamera…";
+      const facingLabel = state.facingMode === "environment" ? "belakang" : "depan";
+      $("#camNote").textContent = "Menyalakan kamera " + facingLabel + "…";
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Browser ini tidak mendukung akses kamera (getUserMedia).");
         }
         // Penjaga: sebagian browser menggantung tanpa jawaban — beri batas 7 detik,
         // setelah itu tampilkan pesan error + mode unggah.
-        const gum = navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
-          audio: false
-        }).then((s) => { if (state.page !== "camera") { s.getTracks().forEach(t => t.stop()); } return s; });
+        const gum = requestCameraStream(state.facingMode).then((s) => {
+          if (state.page !== "camera") { s.getTracks().forEach(t => t.stop()); }
+          return s;
+        });
         const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("__timeout__")), 7000));
         state.stream = await Promise.race([gum, timeout]);
         video.srcObject = state.stream;
         await video.play().catch(() => {});
         $("#camError").classList.remove("show");
-        $("#camNote").textContent = "Kamera menyala. Tekan tombol jepret — sesi " + photoCount() + " foto dimulai.";
+        $("#camNote").textContent = "Kamera " + facingLabel + " menyala. Tekan tombol jepret — sesi " + photoCount() + " foto dimulai.";
         updateCamUI();
       } catch (err) {
         state.stream = null;
@@ -1202,6 +1267,24 @@
         updateCamUI();
       }
     }
+    async function switchCameraFacing(targetFacing) {
+      if (state.capturing) return;
+      const nextFacing = targetFacing || (state.facingMode === "user" ? "environment" : "user");
+      state.facingMode = nextFacing;
+      if (state.uploadMode) {
+        setUploadMode(false);
+      }
+      updateCamUI();
+      await startCamera(true);
+      toast(state.facingMode === "environment" ? "Beralih ke Kamera Belakang" : "Beralih ke Kamera Depan");
+    }
+    $("#camFrontBtn").addEventListener("click", () => {
+      if (state.facingMode !== "user" || !state.stream) switchCameraFacing("user");
+    });
+    $("#camRearBtn").addEventListener("click", () => {
+      if (state.facingMode !== "environment" || !state.stream) switchCameraFacing("environment");
+    });
+    $("#flipCamBtn").addEventListener("click", () => switchCameraFacing());
     function stopCamera() {
       if (state.stream) {
         state.stream.getTracks().forEach(t => t.stop());
@@ -1217,7 +1300,8 @@
     }
 
     function captureFrame() {
-      // Gambar frame video ke canvas, crop tengah rasio 4:3, dibalik (mirror) seperti pratinjau.
+      // Gambar frame video ke canvas, crop tengah rasio 4:3.
+      // Kamera depan ("user") dibalik (mirror) seperti pratinjau; kamera belakang ("environment") tidak dibalik.
       const vw = video.videoWidth, vh = video.videoHeight;
       if (!vw || !vh) return null;
       const target = 4 / 3;
@@ -1227,7 +1311,9 @@
       const c = document.createElement("canvas");
       c.width = sw; c.height = sh;
       const ctx = c.getContext("2d");
-      ctx.translate(sw, 0); ctx.scale(-1, 1);
+      if (state.facingMode !== "environment") {
+        ctx.translate(sw, 0); ctx.scale(-1, 1);
+      }
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
       return c;
     }
@@ -1270,6 +1356,7 @@
       }
       state.capturing = false;
       $("#shutterBtn").disabled = false;
+      updateCamUI();
       const doneAll = state.photos.filter(Boolean).length >= total;
       if (state.page === "camera" && (doneAll || single)) {
         state.retakeIndex = null;

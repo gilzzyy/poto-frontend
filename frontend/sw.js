@@ -1,4 +1,4 @@
-const CACHE_NAME = 'photobooth-asyricame-v3';
+const CACHE_NAME = 'photobooth-asyricame-v4';
 const APP_SHELL = [
   '/',
   '/aplikasi-photobooth.html',
